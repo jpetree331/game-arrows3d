@@ -49,6 +49,8 @@ export interface ShotResult {
   legal: boolean
   /** Fraction [0,1] along pos→exitPoint of the first collision. Present iff !legal. */
   hitT?: number
+  /** What the first collision was with. Present iff !legal. */
+  hitKind?: 'star' | 'trail'
   exitPoint: Vec3
 }
 
@@ -145,22 +147,48 @@ export function evaluateShot(state: BoardState, starId: string, cfg: SimConfig =
   const seg: Seg = { a: star.pos, b: exitPoint }
 
   let minT: number | null = null
+  let hitKind: 'star' | 'trail' = 'star'
   for (const other of state.stars) {
     if (other.id === starId) continue
     const t = sweptSphereVsSphere(seg, cfg.starR, other.pos, cfg.starR)
-    if (t !== null && (minT === null || t < minT)) minT = t
+    if (t !== null && (minT === null || t < minT)) {
+      minT = t
+      hitKind = 'star'
+    }
   }
   for (const trail of state.trails) {
     const t = sweptSphereVsCapsule(seg, cfg.starR, { a: trail.a, b: trail.b, r: cfg.trailR })
-    if (t !== null && (minT === null || t < minT)) minT = t
+    if (t !== null && (minT === null || t < minT)) {
+      minT = t
+      hitKind = 'trail'
+    }
   }
 
-  return minT === null ? { legal: true, exitPoint } : { legal: false, hitT: minT, exitPoint }
+  return minT === null ? { legal: true, exitPoint } : { legal: false, hitT: minT, hitKind, exitPoint }
+}
+
+/**
+ * The trail a star leaves when fired: the full chord of its line through the
+ * bounds sphere — from the backward bounds intersection, through pos, to the
+ * exit point.
+ *
+ * RULE AMENDMENT (flagged in the Sprint 1 report): the brief specified the
+ * trail as pos→exit only, but that rule is provably symmetric — if Q's path
+ * comes within STAR_R+TRAIL_R of P's path, each one's trail blocks the other,
+ * so no solvable board can ever produce a trail collision and the "trails are
+ * obstacles" thesis is vacuous. Full-chord trails restore asymmetric one-way
+ * ordering constraints (your path may cross the part of a line BEHIND its
+ * star) and make trail collisions actually reachable in solvable levels.
+ */
+export function trailForStar(star: Star, cfg: SimConfig = DEFAULT_SIM): Trail {
+  const back = boundsExit(star.pos, scale(star.dir, -1), cfg.boundsR)
+  const exit = boundsExit(star.pos, star.dir, cfg.boundsR)
+  return { id: `trail-${star.id}`, a: back, b: exit }
 }
 
 /**
  * Immutable: legal shot returns a new state with the star removed and its
- * trail added; illegal shot returns the input state unchanged.
+ * trail (full chord) added; illegal shot returns the input state unchanged.
  */
 export function applyShot(state: BoardState, starId: string, cfg: SimConfig = DEFAULT_SIM): BoardState {
   const result = evaluateShot(state, starId, cfg)
@@ -168,6 +196,6 @@ export function applyShot(state: BoardState, starId: string, cfg: SimConfig = DE
   const star = state.stars.find((s) => s.id === starId)!
   return {
     stars: state.stars.filter((s) => s.id !== starId),
-    trails: [...state.trails, { id: `trail-${starId}`, a: star.pos, b: result.exitPoint }],
+    trails: [...state.trails, trailForStar(star, cfg)],
   }
 }

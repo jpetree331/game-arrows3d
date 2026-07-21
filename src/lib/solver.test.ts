@@ -42,12 +42,12 @@ describe('findSolution', () => {
 
   it('found solutions replay legally to a clear board', () => {
     // blocker sits 0.5 off across's path (star-blocks it) but fires away
-    // perpendicular, so its trail does not: blocker must fire before across.
+    // perpendicular, so its trail chord does not: blocker before across.
     const s: BoardState = {
       stars: [
         { id: 'up', pos: [0, 1, 0], dir: [0, 1, 0] },
-        { id: 'blocker', pos: [2, 0.5, 0], dir: [0, 1, 0] },
-        { id: 'across', pos: [-3, 0, 0], dir: [1, 0, 0] },
+        { id: 'blocker', pos: [2, 0.5, 3], dir: [0, 0, 1] },
+        { id: 'across', pos: [-3, 0, 3], dir: [1, 0, 0] },
       ],
       trails: [],
     }

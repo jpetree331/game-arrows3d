@@ -1,0 +1,135 @@
+/* Sagitta greybox theme — the one token file. HUD styling only; scene colors
+   live in config/tuning.ts COLORS. */
+
+:root {
+  --color-space: #05060a;
+  --color-text: #e9eaf0;
+  --color-dim: #9aa1ae;
+  --color-accent: #7cd7ff;
+  --color-flash: #ff5252;
+  --color-panel: rgba(10, 12, 18, 0.72);
+  --color-border: #262c38;
+  --font-mono: 'IBM Plex Mono', ui-monospace, Consolas, monospace;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  background: var(--color-space);
+  color: var(--color-text);
+  font-family: var(--font-mono);
+  font-size: 14px;
+}
+
+.game {
+  position: relative;
+  height: 100%;
+}
+
+.scene-host {
+  position: absolute;
+  inset: 0;
+}
+
+.scene-host canvas {
+  display: block;
+  touch-action: none;
+}
+
+.hud {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  right: 14px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  pointer-events: none;
+  user-select: none;
+}
+
+.hud-name {
+  color: var(--color-text);
+  letter-spacing: 0.06em;
+}
+
+.hud-count {
+  color: var(--color-dim);
+}
+
+.hud-count b {
+  color: var(--color-accent);
+  font-weight: 600;
+}
+
+.hud-spacer {
+  flex: 1;
+}
+
+.hud button,
+.win-overlay button {
+  pointer-events: auto;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--color-text);
+  background: var(--color-panel);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  padding: 6px 14px;
+  cursor: pointer;
+  letter-spacing: 0.04em;
+}
+
+.hud button:hover,
+.win-overlay button:hover {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+.win-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  pointer-events: none;
+  animation: win-fade 0.9s ease-out both;
+}
+
+.win-overlay h1 {
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--color-accent);
+  text-shadow: 0 0 24px rgba(124, 215, 255, 0.45);
+}
+
+.win-overlay p {
+  color: var(--color-dim);
+  font-size: 13px;
+}
+
+@keyframes win-fade {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}

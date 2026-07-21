@@ -18,6 +18,7 @@ export const TUNING = {
   TAP_MAX_MS: 300, // …and released within this
 
   // --- animation ---
+  FRAME_DT_MAX: 0.25, // clamp per-frame delta so throttled background tabs jump, not crawl
   SHOT_SPEED: 14, // world units / second, legal shot travel
   RETURN_SPEED: 22, // world units / second, illegal shot flying home
   FLASH_MS: 280, // red flash duration on illegal hit

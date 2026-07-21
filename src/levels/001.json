@@ -1,0 +1,12 @@
+{
+  "name": "First Light",
+  "stars": [
+    { "id": "A", "pos": [-3, 4.5, 0.95], "dir": [1, 0, 0] },
+    { "id": "B", "pos": [0, 4, 0.5], "dir": [0, 1, 0] },
+    { "id": "C", "pos": [-3, -2, 0.5], "dir": [1, 0, 0] },
+    { "id": "D", "pos": [4.5, -2, 0], "dir": [0, 1, 0] },
+    { "id": "E", "pos": [4, 3, 0], "dir": [0, 1, 0] }
+  ],
+  "_solution": ["E", "D", "C", "B", "A"],
+  "_decoy": "B is legal from the start, but firing it before C leaves a chord that C's shot collides with — trails matter."
+}
