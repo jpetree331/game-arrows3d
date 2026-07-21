@@ -119,10 +119,12 @@ export default function SceneHost({ level, onProgress, onWin }: SceneHostProps) 
     const trailsGroup = new THREE.Group()
     scene.add(trailsGroup)
     const trailMat = new THREE.MeshBasicMaterial({ color: C.trail })
+    const tubeGeo = (a: THREE.Vector3, b: THREE.Vector3) =>
+      new THREE.TubeGeometry(new THREE.LineCurve3(a, b), 1, TUNING.TRAIL_R, 10, false)
     const addTrailMesh = (a: Vec3, b: Vec3) => {
-      const curve = new THREE.LineCurve3(toV(a), toV(b))
-      const mesh = new THREE.Mesh(new THREE.TubeGeometry(curve, 1, TUNING.TRAIL_R, 10, false), trailMat)
+      const mesh = new THREE.Mesh(tubeGeo(toV(a), toV(b)), trailMat)
       trailsGroup.add(mesh)
+      return mesh
     }
 
     // --- tiny task-based animation system ---
@@ -166,13 +168,29 @@ export default function SceneHost({ level, onProgress, onWin }: SceneHostProps) 
       busy = true
 
       if (result.legal) {
-        moveTo(visual.group, toV(result.exitPoint), TUNING.SHOT_SPEED, () => {
+        const trail = trailForStar(star)
+        const home = toV(star.pos)
+        const exit = toV(result.exitPoint)
+        const back = toV(trail.a)
+        const flightLen = home.distanceTo(exit)
+        // juice: the trail draws progressively — forward edge under the flying
+        // star, backward half extending in step — until the full chord lands
+        const growing = addTrailMesh(star.pos, star.pos)
+        let flightDone = false
+        tasks.push(() => {
+          const u = Math.min(1, visual.group.position.distanceTo(home) / flightLen)
+          growing.geometry.dispose()
+          growing.geometry = tubeGeo(home.clone().lerp(back, u), visual.group.position.clone())
+          return flightDone
+        })
+        moveTo(visual.group, exit, TUNING.SHOT_SPEED, () => {
+          flightDone = true
+          growing.geometry.dispose()
+          growing.geometry = tubeGeo(back, exit)
           starsGroup.remove(visual.group)
           visual.body.material.dispose()
           visual.spike.material.dispose()
           starVisuals.delete(starId)
-          const trail = trailForStar(star)
-          addTrailMesh(trail.a, trail.b)
           board = applyShot(board, starId)
           busy = false
           callbacksRef.current.onProgress(board.stars.length)
@@ -184,6 +202,7 @@ export default function SceneHost({ level, onProgress, onWin }: SceneHostProps) 
         moveTo(visual.group, hitPoint, TUNING.SHOT_SPEED, () => {
           visual.body.material.color.set(C.flash)
           visual.spike.material.color.set(C.flash)
+          shakeLeft = TUNING.SHAKE_MS / 1000 // juice: small camera shake on the impact
           wait(TUNING.FLASH_MS, () => {
             visual.body.material.color.set(C.star)
             visual.spike.material.color.set(C.spike)
@@ -231,6 +250,15 @@ export default function SceneHost({ level, onProgress, onWin }: SceneHostProps) 
     renderer.domElement.addEventListener('pointermove', onPointerMove)
     renderer.domElement.addEventListener('pointerup', onPointerUp)
 
+    // dev-only bridge for scripted playtesting from the console
+    if (import.meta.env.DEV) {
+      ;(window as unknown as Record<string, unknown>).__sagitta = {
+        fire,
+        remaining: () => board.stars.map((s) => s.id),
+        busy: () => busy,
+      }
+    }
+
     // --- resize (checked every frame: some embedded panes never fire
     // ResizeObserver, and the mount-time size can be 0 before CSS applies) ---
     const size = new THREE.Vector2()
@@ -248,14 +276,33 @@ export default function SceneHost({ level, onProgress, onWin }: SceneHostProps) 
 
     // --- frame loop ---
     const timer = new THREE.Timer()
+    let shakeLeft = 0 // seconds of camera shake remaining
+    let elapsed = 0
+    const starIndex = new Map(level.stars.map((s, i) => [s.id, i]))
     const frame = (time: number) => {
       timer.update(time)
       const dt = Math.min(timer.getDelta(), TUNING.FRAME_DT_MAX)
+      elapsed += dt
       resizeIfNeeded()
       for (let i = tasks.length - 1; i >= 0; i--) {
         if (tasks[i](dt)) tasks.splice(i, 1)
       }
+      // juice: idle pulse, phase-offset per star so the field breathes
+      for (const [id, v] of starVisuals) {
+        const phase = (starIndex.get(id) ?? 0) * 1.7
+        v.body.scale.setScalar(1 + TUNING.PULSE_AMP * Math.sin(2 * Math.PI * TUNING.PULSE_HZ * elapsed + phase))
+      }
       controls.update()
+      if (shakeLeft > 0) {
+        // additive after controls.update(), which rebuilds the position each frame
+        const decay = shakeLeft / (TUNING.SHAKE_MS / 1000)
+        camera.position.add(
+          new THREE.Vector3(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5).multiplyScalar(
+            2 * TUNING.SHAKE_AMP * decay,
+          ),
+        )
+        shakeLeft -= dt
+      }
       renderer.render(scene, camera)
     }
     renderer.setAnimationLoop(frame)
@@ -268,6 +315,7 @@ export default function SceneHost({ level, onProgress, onWin }: SceneHostProps) 
     return () => {
       renderer.setAnimationLoop(null)
       window.clearInterval(hiddenTick)
+      if (import.meta.env.DEV) delete (window as unknown as Record<string, unknown>).__sagitta
       renderer.domElement.removeEventListener('pointerdown', onPointerDown)
       renderer.domElement.removeEventListener('pointermove', onPointerMove)
       renderer.domElement.removeEventListener('pointerup', onPointerUp)

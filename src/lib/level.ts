@@ -1,11 +1,11 @@
 // lib/level.ts — framework-free: no React, no three, no DOM imports.
 // Defensive level sanitizer: corrupt JSON must never crash the app.
 
-import { TUNING } from '../config/tuning'
-import type { Vec3 } from './vec'
-import { clampLen, norm } from './vec'
-import type { BoardState, Star } from './sim'
-import { makeId } from './id'
+import { TUNING } from '../config/tuning.ts'
+import type { Vec3 } from './vec.ts'
+import { clampLen, norm } from './vec.ts'
+import type { BoardState, Star } from './sim.ts'
+import { makeId } from './id.ts'
 
 export interface Level {
   name: string

@@ -1,9 +1,9 @@
 // lib/sim.ts — framework-free: no React, no three, no DOM imports.
 // All game rules live here as pure functions; the renderer only animates answers.
 
-import { TUNING } from '../config/tuning'
-import type { Vec3 } from './vec'
-import { add, distPointSeg, dot, lenSq, scale, sub, EPS } from './vec'
+import { TUNING } from '../config/tuning.ts'
+import type { Vec3 } from './vec.ts'
+import { add, distPointSeg, dot, lenSq, scale, sub, EPS } from './vec.ts'
 
 export interface Star {
   id: string

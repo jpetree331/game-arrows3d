@@ -1,9 +1,9 @@
 // lib/solver.ts — framework-free: no React, no three, no DOM imports.
 // Used by the level generator only — never at play time.
 
-import { TUNING } from '../config/tuning'
-import type { BoardState, SimConfig, Star } from './sim'
-import { DEFAULT_SIM, applyShot, boundsExit, sweptSphereVsCapsule, sweptSphereVsSphere } from './sim'
+import { TUNING } from '../config/tuning.ts'
+import type { BoardState, SimConfig, Star } from './sim.ts'
+import { DEFAULT_SIM, applyShot, boundsExit, sweptSphereVsCapsule, sweptSphereVsSphere } from './sim.ts'
 
 /** How many obstacles (stars + trails) currently block this star's shot. */
 function countBlockers(state: BoardState, star: Star, cfg: SimConfig): number {
